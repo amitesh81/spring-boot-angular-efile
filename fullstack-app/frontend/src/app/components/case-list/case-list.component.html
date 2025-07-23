@@ -1,0 +1,167 @@
+<div class="case-list-container">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+      <i class="fa fa-folder-open me-2"></i>
+      Case Management
+    </h2>
+    <button 
+      type="button" 
+      class="btn btn-primary"
+      (click)="showCreateForm()"
+      [disabled]="loading">
+      <i class="fa fa-plus me-2"></i>
+      New Case
+    </button>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error=''" aria-label="Close"></button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading && !showForm" class="text-center my-4">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Case Form -->
+  <div *ngIf="showForm" class="mb-4">
+    <app-case-form
+      [caseData]="selectedCase"
+      [isEditMode]="isEditMode"
+      (formSubmit)="onFormSubmit($event)"
+      (formCancel)="onFormCancel()">
+    </app-case-form>
+  </div>
+
+  <!-- Cases List -->
+  <div *ngIf="!showForm">
+    <!-- Empty State -->
+    <div *ngIf="cases.length === 0 && !loading" class="text-center py-5">
+      <div class="empty-state">
+        <i class="fa fa-folder-open fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">No Cases Found</h4>
+        <p class="text-muted mb-4">Get started by creating your first case filing.</p>
+        <button type="button" class="btn btn-primary" (click)="showCreateForm()">
+          <i class="fa fa-plus me-2"></i>
+          Create First Case
+        </button>
+      </div>
+    </div>
+
+    <!-- Cases Grid -->
+    <div *ngIf="cases.length > 0" class="row">
+      <div *ngFor="let case of cases" class="col-lg-6 col-xl-4 mb-4">
+        <div class="card case-card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+              <span [class]="getCaseStatusBadge(case)">
+                {{getCaseStatusText(case)}}
+              </span>
+            </div>
+            <div class="dropdown">
+              <button 
+                class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                type="button" 
+                [id]="'dropdownMenuButton' + case.id"
+                data-bs-toggle="dropdown" 
+                aria-expanded="false">
+                <i class="fa fa-ellipsis-v"></i>
+              </button>
+              <ul class="dropdown-menu" [attr.aria-labelledby]="'dropdownMenuButton' + case.id">
+                <li>
+                  <button class="dropdown-item" (click)="editCase(case)">
+                    <i class="fa fa-edit me-2"></i>Edit
+                  </button>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <button class="dropdown-item text-danger" (click)="deleteCase(case)">
+                    <i class="fa fa-trash me-2"></i>Delete
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="card-body">
+            <!-- Case Number -->
+            <h6 class="card-title">
+              <strong>Case Number:</strong>
+              <span class="text-muted">
+                {{case.courtCaseNumber || 'Case Unassigned'}}
+              </span>
+            </h6>
+
+            <!-- Court Location -->
+            <p class="card-text mb-2">
+              <strong>Court Location:</strong><br>
+              <span class="text-muted">{{case.courtLocation}}</span>
+            </p>
+
+            <!-- Case Category & Type -->
+            <p class="card-text mb-2">
+              <strong>Category:</strong> <span class="text-muted">{{case.caseCategory}}</span><br>
+              <strong>Type:</strong> <span class="text-muted">{{case.caseType}}</span>
+            </p>
+
+            <!-- Filer Reference -->
+            <p class="card-text mb-2" *ngIf="case.filerReferenceNumber">
+              <strong>Filer Reference:</strong><br>
+              <span class="text-muted">{{case.filerReferenceNumber}}</span>
+            </p>
+
+            <!-- Filing Fee -->
+            <p class="card-text mb-2" *ngIf="case.filingFee || case.filingAmount">
+              <strong>Filing Fee:</strong>
+              <span class="text-success fw-bold">
+                {{formatCurrency(case.filingFee || case.filingAmount)}}
+              </span>
+            </p>
+
+            <!-- Fee Exemptions -->
+            <div *ngIf="case.exempt || case.govAttorney || case.informaPauperis || case.waived" class="mb-2">
+              <strong>Exemptions:</strong>
+              <div class="mt-1">
+                <span *ngIf="case.exempt" class="badge bg-info me-1">RSMo 514.040</span>
+                <span *ngIf="case.govAttorney" class="badge bg-info me-1">Government</span>
+                <span *ngIf="case.informaPauperis" class="badge bg-info me-1">In Forma Pauperis</span>
+                <span *ngIf="case.waived" class="badge bg-info me-1">Waived</span>
+              </div>
+            </div>
+
+            <!-- Notes Preview -->
+            <p class="card-text" *ngIf="case.noteToClerk">
+              <strong>Notes:</strong><br>
+              <span class="text-muted small">
+                {{case.noteToClerk.length > 100 ? (case.noteToClerk | slice:0:100) + '...' : case.noteToClerk}}
+              </span>
+            </p>
+          </div>
+
+          <div class="card-footer text-muted small">
+            <div class="d-flex justify-content-between">
+              <span *ngIf="case.createdDate">
+                Created: {{formatDate(case.createdDate)}}
+              </span>
+              <span *ngIf="case.updatedDate">
+                Updated: {{formatDate(case.updatedDate)}}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load More / Pagination (for future enhancement) -->
+    <div *ngIf="cases.length > 0" class="text-center mt-4">
+      <p class="text-muted">
+        Showing {{cases.length}} case{{cases.length !== 1 ? 's' : ''}}
+      </p>
+    </div>
+  </div>
+</div>

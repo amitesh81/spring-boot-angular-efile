@@ -1,0 +1,271 @@
+<div class="case-form-container">
+  <!-- Form Header -->
+  <div class="row stepHeader">
+    <div class="col-10">
+      <span>
+        <i class="fa fa-gavel me-2" aria-hidden="true"></i>
+        <span class="stepHeaderTitle">Case Details</span>
+      </span>
+    </div>
+    <div class="col-2 text-end" *ngIf="isEditMode">
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="onCancel()">
+        <i class="fa fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{error}}
+    <button type="button" class="btn-close" (click)="error=''" aria-label="Close"></button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="text-center my-4">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Case Form -->
+  <form [formGroup]="caseForm" (ngSubmit)="onSubmit()" *ngIf="!loading">
+    
+    <!-- Required Fields Notice -->
+    <div class="alert alert-info">
+      <i class="fa fa-info-circle me-2"></i>
+      Required fields are denoted by an asterisk (*)
+    </div>
+
+    <!-- Case Details Section -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">Case Details</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <!-- Court Location -->
+          <div class="col-md-6 mb-3">
+            <label for="courtLocation" class="form-label">Court Location <span class="text-danger">*</span></label>
+            <select 
+              id="courtLocation" 
+              formControlName="courtLocation" 
+              class="form-select"
+              [class.is-invalid]="isFieldInvalid('courtLocation')">
+              <option value="">--Select Court Location--</option>
+              <option *ngFor="let location of courtLocations" [value]="location.value">
+                {{location.label}}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('courtLocation')">
+              {{getFieldError('courtLocation')}}
+            </div>
+          </div>
+
+          <!-- Case Category -->
+          <div class="col-md-6 mb-3">
+            <label for="caseCategory" class="form-label">Case Category <span class="text-danger">*</span></label>
+            <select 
+              id="caseCategory" 
+              formControlName="caseCategory" 
+              class="form-select"
+              [class.is-invalid]="isFieldInvalid('caseCategory')">
+              <option value="">--Select Case Category--</option>
+              <option *ngFor="let category of caseCategories" [value]="category.value">
+                {{category.label}}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('caseCategory')">
+              {{getFieldError('caseCategory')}}
+            </div>
+          </div>
+
+          <!-- Case Type -->
+          <div class="col-md-6 mb-3">
+            <label for="caseType" class="form-label">Case Type <span class="text-danger">*</span></label>
+            <select 
+              id="caseType" 
+              formControlName="caseType" 
+              class="form-select"
+              [class.is-invalid]="isFieldInvalid('caseType')"
+              [disabled]="caseTypes.length === 0">
+              <option value="">
+                {{caseTypes.length === 0 ? '--First select a case category--' : '--Select Case Type--'}}
+              </option>
+              <option *ngFor="let type of caseTypes" [value]="type.value">
+                {{type.label}}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('caseType')">
+              {{getFieldError('caseType')}}
+            </div>
+          </div>
+
+          <!-- Filer Reference Number -->
+          <div class="col-md-6 mb-3">
+            <label for="filerReferenceNo" class="form-label">Filer Reference Number</label>
+            <input 
+              type="text" 
+              id="filerReferenceNo"
+              formControlName="filerReferenceNo"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('filerReferenceNo')"
+              maxlength="30"
+              placeholder="Enter reference number (optional)">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('filerReferenceNo')">
+              {{getFieldError('filerReferenceNo')}}
+            </div>
+            <div class="form-text">Maximum 30 characters</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auto Case Create Message -->
+    <div *ngIf="showAutoFeeMessage" class="alert alert-warning" role="alert">
+      <i class="fa fa-exclamation-triangle me-2"></i>
+      <strong>NOTE:</strong> You have selected an Auto Case create case type. Filing fees will be auto populated in the filing fee section.
+    </div>
+
+    <!-- Filing Fee Section -->
+    <div *ngIf="showFilingFeeSection" class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">Filing Fee Information</h5>
+      </div>
+      <div class="card-body">
+        <!-- Filing Fee Input -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <label for="filingAmount" class="form-label">Filing Fee <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input 
+                type="text" 
+                id="filingAmount"
+                formControlName="filingAmount"
+                class="form-control"
+                [class.is-invalid]="isFieldInvalid('filingAmount')"
+                placeholder="0.00"
+                (keypress)="onNumericInput($event)">
+            </div>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('filingAmount')">
+              {{getFieldError('filingAmount')}}
+            </div>
+            <div class="form-text">
+              For new case filings and supplemental filings that require a fee, please enter an amount or check at least one exemption below.
+            </div>
+          </div>
+        </div>
+
+        <!-- Fee Exemptions -->
+        <div class="row">
+          <div class="col-12">
+            <h6 class="mb-3">Filing Fee Exemptions</h6>
+            <p class="text-muted mb-3">
+              For new case filings and supplemental filings that require a fee, please select any filing fee exemption that apply:
+            </p>
+            
+            <div class="form-check mb-2">
+              <input 
+                type="checkbox" 
+                id="exempt"
+                formControlName="exempt"
+                class="form-check-input">
+              <label class="form-check-label" for="exempt">
+                Exempt From Filing Fees by Section 514.040 RSMo
+              </label>
+            </div>
+
+            <div class="form-check mb-2">
+              <input 
+                type="checkbox" 
+                id="govAttorney"
+                formControlName="govAttorney"
+                class="form-check-input">
+              <label class="form-check-label" for="govAttorney">
+                Government Filer - Exempt from Filing Fees
+              </label>
+            </div>
+
+            <div class="form-check mb-2">
+              <input 
+                type="checkbox" 
+                id="informaPauperis"
+                formControlName="informaPauperis"
+                class="form-check-input">
+              <label class="form-check-label" for="informaPauperis">
+                In Forma Pauperis
+              </label>
+            </div>
+
+            <div class="form-check mb-3">
+              <input 
+                type="checkbox" 
+                id="waived"
+                formControlName="waived"
+                class="form-check-input">
+              <label class="form-check-label" for="waived">
+                Fee Waived / Not Required (explain special circumstances in Notes to Clerk)
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes to Clerk Section -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">Additional Information</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-12">
+            <label for="noteToClerk" class="form-label">Notes to Clerk</label>
+            <textarea 
+              id="noteToClerk"
+              formControlName="noteToClerk"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('noteToClerk')"
+              rows="4"
+              maxlength="1000"
+              placeholder="Enter a note to the clerk regarding processing of this filing (Maximum 1000 characters)"></textarea>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('noteToClerk')">
+              {{getFieldError('noteToClerk')}}
+            </div>
+            <div class="form-text">
+              {{(caseForm.get('noteToClerk')?.value?.length || 0)}}/1000 characters
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="row">
+      <div class="col-12">
+        <div class="d-flex gap-2 justify-content-end">
+          <button 
+            type="button" 
+            class="btn btn-secondary"
+            (click)="onReset()">
+            Reset
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary"
+            (click)="onCancel()"
+            *ngIf="isEditMode">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            [disabled]="loading || caseForm.invalid">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+            {{isEditMode ? 'Update Case' : 'Create Case'}}
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
